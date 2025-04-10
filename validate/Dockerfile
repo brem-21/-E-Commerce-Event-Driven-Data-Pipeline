@@ -19,4 +19,4 @@ COPY . .
 # Optional: Run formatting and linting during build
 # RUN make refactor
 
-CMD ["python", "s3_upload.py"]
+CMD ["python", "validate.py"]
