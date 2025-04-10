@@ -1,15 +1,13 @@
 install:
-	pip install --upgrade pip &&\
-		pip install -r requirements.txt
+	pip install --upgrade pip && \
+	pip install -r requirements.txt
 
-format:	
+format:
 	black *.py 
 
 lint:
 	pylint --disable=R,C *.py
 
-
 refactor: format lint
 
-		
 all: install refactor
