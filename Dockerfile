@@ -14,9 +14,9 @@ COPY requirements.txt Makefile ./
 RUN make install
 
 # Copy the rest of the application
-COPY upload_to_s3.py ./
+COPY s3_upload.py ./
 
 # Optional: Run formatting and linting during build
 # RUN make refactor
 
-CMD ["python", "upload_to_s3.py"]
+CMD ["python", "s3_upload.py"]
