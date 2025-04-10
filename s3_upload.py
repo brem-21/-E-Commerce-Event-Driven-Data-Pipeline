@@ -1,10 +1,12 @@
 import os
 import sys
+from typing import Dict, Any
 import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 from dotenv import load_dotenv
 
 
-def load_environment_variables():
+def load_environment_variables() -> Dict[str, Any]:
     """Load and validate required environment variables."""
     load_dotenv()
 
@@ -35,7 +37,7 @@ def load_environment_variables():
     }
 
 
-def initialize_s3_client(access_key, secret_key, region):
+def initialize_s3_client(access_key: str, secret_key: str, region: str) -> boto3.client:
     """Initialize and return an S3 client."""
     try:
         return boto3.client(
@@ -44,11 +46,13 @@ def initialize_s3_client(access_key, secret_key, region):
             aws_secret_access_key=secret_key,
             region_name=region,
         )
-    except Exception as e:
-        raise RuntimeError(f"Failed to initialize S3 client: {str(e)}")
+    except (BotoCoreError, ClientError) as e:
+        raise RuntimeError(f"Failed to initialize S3 client: {str(e)}") from e
 
 
-def upload_files_to_s3(s3_client, bucket_name, local_path, s3_prefix):
+def upload_files_to_s3(
+    s3_client: boto3.client, bucket_name: str, local_path: str, s3_prefix: str
+) -> None:
     """Upload all files from local_path to s3_prefix in the bucket."""
     if not os.path.exists(local_path):
         raise FileNotFoundError(f"Local path does not exist: {local_path}")
@@ -65,11 +69,13 @@ def upload_files_to_s3(s3_client, bucket_name, local_path, s3_prefix):
         try:
             s3_client.upload_file(file_path, bucket_name, s3_key)
             print(f"Successfully uploaded {file_path} to s3://{bucket_name}/{s3_key}")
-        except Exception as e:
+        except (BotoCoreError, ClientError, IOError) as e:
             print(f"Error uploading {file_path}: {str(e)}", file=sys.stderr)
 
 
-def upload_single_file_to_s3(s3_client, bucket_name, local_path, s3_key):
+def upload_single_file_to_s3(
+    s3_client: boto3.client, bucket_name: str, local_path: str, s3_key: str
+) -> None:
     """Upload a single file to S3."""
     if not os.path.exists(local_path):
         raise FileNotFoundError(f"File does not exist: {local_path}")
@@ -77,11 +83,12 @@ def upload_single_file_to_s3(s3_client, bucket_name, local_path, s3_key):
     try:
         s3_client.upload_file(local_path, bucket_name, s3_key)
         print(f"Successfully uploaded {local_path} to s3://{bucket_name}/{s3_key}")
-    except Exception as e:
-        raise RuntimeError(f"Error uploading {local_path}: {str(e)}")
+    except (BotoCoreError, ClientError, IOError) as e:
+        raise RuntimeError(f"Error uploading {local_path}: {str(e)}") from e
 
 
-def main():
+def main() -> None:
+    """Main function to orchestrate the S3 upload process."""
     try:
         # Load configuration
         config = load_environment_variables()
@@ -114,8 +121,11 @@ def main():
 
         print("All upload operations completed.")
 
-    except Exception as e:
+    except (EnvironmentError, RuntimeError, FileNotFoundError) as e:
         print(f"Fatal error: {str(e)}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:  # pylint: disable=W0703
+        print(f"Unexpected error: {str(e)}", file=sys.stderr)
         sys.exit(1)
 
 
